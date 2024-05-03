@@ -9,24 +9,8 @@ AES aes;
 byte cipher[1000];
 char b64[10000];
 
-
-void readNoiseForEncryption(byte key[16]) {
-  uint64_t noiseValueForKey = 0;
-
-  // Combinar múltiplas leituras do ADC para aumentar a entropia
-  for (int i = 0; i < 8; i++) {
-  uint16_t adcValue = analogRead(4);
-  uint32_t randomValue = random(0xFFFF); // Gerar um valor aleatório de 16 bits
-  noiseValueForKey ^= (static_cast<uint64_t>(adcValue) << (i * 12)) ^ (static_cast<uint64_t>(randomValue) << (i * 16));
-  delay(10); // Atraso entre leituras para aumentar a aleatoriedade
-  }
-  // Copiar os bytes do valor combinado para a chave
-  memcpy(key, &noiseValueForKey, sizeof(noiseValueForKey));
-
-  // Imprimir o valor combinado (para fins de depuração)
-  Serial.print("Valor do ruído combinado: ");
-  Serial.println(noiseValueForKey, HEX);
-}
+uint64_t noiseValueForKey = 0;
+byte key[16];
 
 // Função para criptografar a mensagem usando uma chave e IV fornecidos
 void do_encrypt(String msg, byte key[16], String iv_str) {
@@ -94,13 +78,27 @@ void setup() {
   Serial.begin(9600);
   Serial.println();
   Serial.println();
+
+  // Combinar múltiplas leituras do ADC para aumentar a entropia
+  for (int i = 0; i < 8; i++) {
+  uint16_t adcValue = analogRead(4);
+  uint32_t randomValue = random(0xFFFF); // Gerar um valor aleatório de 16 bits
+  noiseValueForKey ^= (static_cast<uint64_t>(adcValue) << (i * 12)) ^ (static_cast<uint64_t>(randomValue) << (i * 16));
+  delay(10); // Atraso entre leituras para aumentar a aleatoriedade
+  }
+  // Copiar os bytes do valor combinado para a chave
+  memcpy(key, &noiseValueForKey, sizeof(noiseValueForKey));
+
+  // Imprimir o valor combinado (para fins de depuração)
+  Serial.print("Valor do ruído combinado: ");
+  Serial.println(noiseValueForKey, HEX);
 }
 
 void loop() {
   Serial.println();
-  String msg = "AES-128-CBC #teste de EnCrYpTaÇãO do TCC de https://github.com/PedroNassif";
+  String msg = "AES-128-CBC #teste de EnCrYpTaCãO do TCC de https://github.com/PedroNassif ";
   byte key[16]; // Chave AES-128
-  readNoiseForEncryption(key); // Ler ruído da porta analógica e formatar como chave
+ // readNoiseForEncryption(key); // Ler ruído da porta analógica e formatar como chave
 
   uint64_t noiseValueForIV = ((1 + analogRead(4) * 739 * (analogRead(A0) ^ 7)) / 13) * 4739772123189;
   String iv_str = String(noiseValueForIV); // Vetor de inicialização (IV) fixo, por simplicidade
